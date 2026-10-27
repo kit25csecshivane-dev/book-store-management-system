@@ -1,0 +1,108 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'kit25csecshivane@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isStaffOrAdmin() {
+      return isSignedIn();
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Admins collection
+    match /admins/{adminId} {
+      allow read: if isStaffOrAdmin();
+      allow write: if isAdmin();
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn() && (
+        request.auth.uid == userId || isAdmin()
+      );
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (request.auth.uid == userId && !incoming().diff(existing()).affectedKeys().hasAny(['role']))
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Books collection
+    match /books/{bookId} {
+      allow read: if isStaffOrAdmin();
+      allow create: if isStaffOrAdmin() &&
+        incoming().title is string && incoming().title.size() > 0 && incoming().title.size() <= 200 &&
+        incoming().sellingPrice is number && incoming().sellingPrice >= 0 &&
+        incoming().stockQuantity is number && incoming().stockQuantity >= 0;
+      allow update: if isStaffOrAdmin() &&
+        incoming().title is string && incoming().title.size() > 0 && incoming().title.size() <= 200 &&
+        incoming().sellingPrice is number && incoming().sellingPrice >= 0 &&
+        incoming().stockQuantity is number && incoming().stockQuantity >= 0;
+      allow delete: if isAdmin();
+    }
+
+    // Customers collection
+    match /customers/{customerId} {
+      allow read: if isStaffOrAdmin();
+      allow create: if isStaffOrAdmin() &&
+        incoming().name is string && incoming().name.size() > 0 && incoming().name.size() <= 100;
+      allow update: if isStaffOrAdmin() &&
+        incoming().name is string && incoming().name.size() > 0 && incoming().name.size() <= 100;
+      allow delete: if isAdmin();
+    }
+
+    // Sales collection
+    match /sales/{saleId} {
+      allow read: if isStaffOrAdmin();
+      allow create: if isStaffOrAdmin() &&
+        incoming().invoiceNumber is string && incoming().invoiceNumber.size() > 0 &&
+        incoming().totalAmount is number && incoming().totalAmount >= 0 &&
+        incoming().createdBy == request.auth.uid;
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Inventory movements collection (Audit trail)
+    match /inventoryMovements/{movementId} {
+      allow read: if isStaffOrAdmin();
+      allow create: if isStaffOrAdmin() &&
+        incoming().bookId is string &&
+        incoming().movementType in ['sale', 'restock', 'adjustment', 'initial'] &&
+        incoming().createdBy == request.auth.uid;
+      allow update: if false; // Immutable audit log
+      allow delete: if isAdmin();
+    }
+
+    // Store settings collection
+    match /storeSettings/{settingId} {
+      allow read: if isStaffOrAdmin();
+      allow write: if isAdmin();
+    }
+  }
+}

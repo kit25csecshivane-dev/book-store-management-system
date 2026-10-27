@@ -1,0 +1,6 @@
+{
+  "name": "Book Store Management System",
+  "description": "Smart Bookstore Operations and Inventory Control - comprehensive book, stock, customer, sales billing, and reporting system.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

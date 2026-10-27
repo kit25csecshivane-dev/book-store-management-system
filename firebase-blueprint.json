@@ -1,0 +1,155 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Authenticated bookstore staff or administrator account",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "displayName": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 120 },
+        "role": { "type": "string", "enum": ["admin", "staff"] },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "email", "role", "active"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Authorized administrator lookup document",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "maxLength": 128 },
+        "email": { "type": "string", "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Book": {
+      "title": "Book",
+      "description": "Book catalog record with stock and pricing information",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 200, "minLength": 1 },
+        "author": { "type": "string", "maxLength": 120, "minLength": 1 },
+        "isbn": { "type": "string", "maxLength": 30 },
+        "category": { "type": "string", "maxLength": 60 },
+        "publisher": { "type": "string", "maxLength": 120 },
+        "publicationYear": { "type": "number" },
+        "sellingPrice": { "type": "number" },
+        "costPrice": { "type": "number" },
+        "stockQuantity": { "type": "number" },
+        "lowStockThreshold": { "type": "number" },
+        "coverImageUrl": { "type": "string", "maxLength": 500 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "author", "sellingPrice", "stockQuantity", "active"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "Customer record with contact details and purchase summary",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100, "minLength": 1 },
+        "phone": { "type": "string", "maxLength": 25 },
+        "email": { "type": "string", "maxLength": 120 },
+        "notes": { "type": "string", "maxLength": 500 },
+        "totalPurchases": { "type": "number" },
+        "totalSpent": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name"]
+    },
+    "Sale": {
+      "title": "Sale",
+      "description": "Completed point-of-sale transaction and invoice record",
+      "type": "object",
+      "properties": {
+        "invoiceNumber": { "type": "string", "maxLength": 50 },
+        "customerId": { "type": "string", "maxLength": 128 },
+        "customerNameSnapshot": { "type": "string", "maxLength": 100 },
+        "subtotal": { "type": "number" },
+        "discount": { "type": "number" },
+        "tax": { "type": "number" },
+        "totalAmount": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["cash", "upi"] },
+        "paymentStatus": { "type": "string", "enum": ["completed"] },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdByName": { "type": "string", "maxLength": 100 },
+        "status": { "type": "string", "enum": ["completed", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["invoiceNumber", "totalAmount", "paymentMethod", "paymentStatus", "createdBy", "status"]
+    },
+    "InventoryMovement": {
+      "title": "InventoryMovement",
+      "description": "Audit trail log for all stock changes (sales, restocks, adjustments)",
+      "type": "object",
+      "properties": {
+        "bookId": { "type": "string", "maxLength": 128 },
+        "bookTitleSnapshot": { "type": "string", "maxLength": 200 },
+        "movementType": { "type": "string", "enum": ["sale", "restock", "adjustment", "initial"] },
+        "quantityChange": { "type": "number" },
+        "previousQuantity": { "type": "number" },
+        "newQuantity": { "type": "number" },
+        "reason": { "type": "string", "maxLength": 300 },
+        "referenceSaleId": { "type": "string", "maxLength": 128 },
+        "createdBy": { "type": "string", "maxLength": 128 },
+        "createdByName": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["bookId", "movementType", "quantityChange", "previousQuantity", "newQuantity", "createdBy"]
+    },
+    "StoreSettings": {
+      "title": "StoreSettings",
+      "description": "Global bookstore configuration and receipt details",
+      "type": "object",
+      "properties": {
+        "storeName": { "type": "string", "maxLength": 120 },
+        "address": { "type": "string", "maxLength": 250 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "email": { "type": "string", "maxLength": 120 },
+        "defaultLowStockThreshold": { "type": "number" },
+        "receiptFooterMessage": { "type": "string", "maxLength": 300 },
+        "taxPercentage": { "type": "number" },
+        "currency": { "type": "string", "maxLength": 10 },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["storeName"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles for bookstore personnel"
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Designated administrator lookup"
+    },
+    "/books/{bookId}": {
+      "schema": "Book",
+      "description": "Book inventory items"
+    },
+    "/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Customer contact registry and purchase records"
+    },
+    "/sales/{saleId}": {
+      "schema": "Sale",
+      "description": "Sales invoices and transaction items"
+    },
+    "/inventoryMovements/{movementId}": {
+      "schema": "InventoryMovement",
+      "description": "Auditable stock movement logs"
+    },
+    "/storeSettings/{settingId}": {
+      "schema": "StoreSettings",
+      "description": "Bookstore general configurations"
+    }
+  }
+}
